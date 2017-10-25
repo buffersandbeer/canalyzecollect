@@ -5,19 +5,19 @@
   branch = "master"
   name = "github.com/buffersandbeer/canlib"
   packages = ["."]
-  revision = "bf1572bd6fbdc6489013eb1f96ad446b5d4ca779"
+  revision = "3ea6a9c310ec5a016d909280c4e7aaac4a796d5a"
 
 [[projects]]
   branch = "master"
   name = "github.com/lib/pq"
   packages = [".","oid"]
-  revision = "017e4c14d80628353eaee677a1aeffe47a10c0dc"
+  revision = "b609790bd85edf8e9ab7e0f8912750a786177bcf"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "8dbc5d05d6edcc104950cc299a1ce6641235bc86"
+  revision = "9e4fff1f4d8d628aa20ec621ba85b3d8ea08ba04"
 
 [[projects]]
   branch = "v2"
