@@ -1,0 +1,2 @@
+dburi: postgres://user:pass@host/database?options
+capturer: capturer_name

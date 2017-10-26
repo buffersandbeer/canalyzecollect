@@ -13,6 +13,7 @@ func main() {
     capName := flag.String("capname", "", "The name of the capture")
     details := flag.String("details", "", "Details about the capture")
     target := flag.String("target", "", "Name of the targeted device")
+    quiet := flag.Bool("quiet", false, "Run without printing to stdout")
     flag.Parse()
 
     c := make(chan canlib.RawCanFrame, 100)
@@ -29,19 +30,21 @@ func main() {
     context, _ := database.AddContext(config.Capturer, *capName, *details, *target)
 
     go canlib.CaptureCan(*caniface, c, errChan)
-    go handleCan(c, p, *caniface)
+    go handleCan(c, p, *caniface, *quiet)
     go handleDB(p, database, context)
     test := <-errChan
     panic(test.Error())
 }
 
 // Process the can message
-func handleCan(ch <-chan canlib.RawCanFrame, pch chan<- canlib.ProcessedCanFrame, ifaceName string) {
+func handleCan(ch <-chan canlib.RawCanFrame, pch chan<- canlib.ProcessedCanFrame, ifaceName string, quiet bool) {
     processedCan := canlib.ProcessedCanFrame{}
     for rawCan := range ch {
         canlib.ProcessRawCan(&processedCan, rawCan, ifaceName)
         pch <- processedCan
-        fmt.Println(canlib.RawCanFrameToString(rawCan, "\t"))
+        if !quiet {
+            fmt.Println(canlib.ProcessedCanFrameToString(processedCan, "\t"))
+        }
     }
 }
 

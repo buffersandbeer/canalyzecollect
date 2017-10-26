@@ -5,7 +5,7 @@
   branch = "master"
   name = "github.com/buffersandbeer/canlib"
   packages = ["."]
-  revision = "cd9909bded8412e164fb01e3f241a29fc2ce44d2"
+  revision = "22eda8987b2c3b8c3f260743f8b9d2a8cc7a1bf2"
 
 [[projects]]
   branch = "master"
