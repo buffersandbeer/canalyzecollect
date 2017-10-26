@@ -40,7 +40,7 @@ func main() {
 func handleCan(ch <-chan canlib.RawCanFrame, pch chan<- canlib.ProcessedCanFrame, ifaceName string, quiet bool) {
     processedCan := canlib.ProcessedCanFrame{}
     for rawCan := range ch {
-        canlib.ProcessRawCan(&processedCan, rawCan, ifaceName)
+        canlib.ProcessRawCan(&processedCan, rawCan)
         pch <- processedCan
         if !quiet {
             fmt.Println(canlib.ProcessedCanFrameToString(processedCan, "\t"))
