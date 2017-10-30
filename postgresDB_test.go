@@ -70,6 +70,7 @@ func TestPostgresAddRawFrame(t *testing.T) {
                                      Rtr: false,
                                      Err: false,
                                      Data: []byte{},
+                                     CaptureInterface: "test",
     }
 
     testDB, _ := CreatePostgres(testConf)
@@ -100,8 +101,9 @@ func TestPostgresAddProcessedFrame(t *testing.T) {
                                      Rtr: false,
                                      Err: false,
                                      Data: []byte{},
+                                     CaptureInterface: "test",
     }
-    testProcessedFrame := canlib.ProcessedCanFrame{ Packet: testRawFrame, PacketHash: "test", CaptureInterface: "vcan0"}
+    testProcessedFrame := canlib.ProcessedCanFrame{ Packet: testRawFrame, PacketHash: "test"}
     testDB, _ := CreatePostgres(testConf)
     contextID, _ := testDB.AddContext("test", "test", "test", "test")
     err := testDB.AddProcessedFrame(testProcessedFrame, contextID)

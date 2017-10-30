@@ -26,8 +26,14 @@ func main() {
         panic(err.Error())
     }
 
-    database, _ := canalyze.CreatePostgres(config)
-    context, _ := database.AddContext(config.Capturer, *capName, *details, *target)
+    database, err := canalyze.CreatePostgres(config)
+    if err != nil {
+        panic(err.Error())
+    }
+    context, err := database.AddContext(config.Capturer, *capName, *details, *target)
+    if err != nil {
+        panic(err.Error())
+    }
 
     go canlib.CaptureCan(*caniface, c, errChan)
     go handleCan(c, p, *caniface, *quiet)

@@ -30,8 +30,9 @@ CREATE TABLE canalyze.raw_can_frames (
     remote_transmission_request_flag bool  ,
     error_flag           bool  ,
     payload              bytea  ,
-    context_id           integer  ,
+    context_id           integer  NOT NULL,
     timestamp_nano       bigint  NOT NULL,
+    capture_interface    varchar  NOT NULL,
     CONSTRAINT pk_raw_can_frame PRIMARY KEY ( id )
  );
 
@@ -55,7 +56,11 @@ COMMENT ON COLUMN canalyze.raw_can_frames.error_flag IS 'CAN Error Flag';
 
 COMMENT ON COLUMN canalyze.raw_can_frames.payload IS 'Data within the CAN packet';
 
+COMMENT ON COLUMN canalyze.raw_can_frames.context_id IS 'Links the frame to the context for its capture';
+
 COMMENT ON COLUMN canalyze.raw_can_frames.timestamp_nano IS 'Timestamp that the packet was captured at in nanoseconds';
+
+COMMENT ON COLUMN canalyze.raw_can_frames.capture_interface IS 'The interface that this frame was captured on';
 
 CREATE TABLE canalyze.candump_raw ( 
     id                   serial  NOT NULL,
@@ -72,10 +77,12 @@ COMMENT ON COLUMN canalyze.candump_raw.id IS 'Unique identifier for packet';
 
 COMMENT ON COLUMN canalyze.candump_raw.frame IS 'Packet information';
 
+COMMENT ON COLUMN canalyze.candump_raw.context_id IS 'Link to the context of the capture';
+
 CREATE TABLE canalyze.processed_raw_can ( 
     frame_hash           varchar(64)  NOT NULL,
-    capture_interface    varchar  NOT NULL,
-    frame_id             integer  
+    frame_id             integer  ,
+    ascii_in_data        varchar  NOT NULL
  );
 
 CREATE INDEX idx_processed_raw_can ON canalyze.processed_raw_can ( frame_id );
@@ -84,10 +91,14 @@ COMMENT ON TABLE canalyze.processed_raw_can IS 'Table containing additional info
 
 COMMENT ON COLUMN canalyze.processed_raw_can.frame_hash IS 'hash of can_id + data for creating a single unique identifier for each id/data combination';
 
-COMMENT ON COLUMN canalyze.processed_raw_can.capture_interface IS 'The capturing interface of the packet';
+COMMENT ON COLUMN canalyze.processed_raw_can.frame_id IS 'ID of the raw can frame this extends';
+
+COMMENT ON COLUMN canalyze.processed_raw_can.ascii_in_data IS 'Any Ascii values stored with the payload';
 
 ALTER TABLE canalyze.candump_raw ADD CONSTRAINT fk_candump_raw_capture_context FOREIGN KEY ( context_id ) REFERENCES canalyze.capture_context( id ) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE canalyze.processed_raw_can ADD CONSTRAINT fk_processed_raw_can FOREIGN KEY ( frame_id ) REFERENCES canalyze.raw_can_frames( id );
 
 ALTER TABLE canalyze.raw_can_frames ADD CONSTRAINT fk_context_id FOREIGN KEY ( context_id ) REFERENCES canalyze.capture_context( id );
+
+
