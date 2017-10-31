@@ -16,8 +16,7 @@ func main() {
     quiet := flag.Bool("quiet", false, "Run without printing to stdout")
     flag.Parse()
 
-    c := make(chan canlib.RawCanFrame, 100)
-    p := make(chan canlib.ProcessedCanFrame, 1000)
+    c := make(chan canlib.RawCanFrame, 100000)
     errChan := make(chan error)
 
     config := canalyze.Config{}
@@ -36,30 +35,19 @@ func main() {
     }
 
     go canlib.CaptureCan(*caniface, c, errChan)
-    go handleCan(c, p, *caniface, *quiet)
-    go handleDB(p, database, context)
+    go handleCan(c, *quiet, context, database)
     test := <-errChan
     panic(test.Error())
 }
 
 // Process the can message
-func handleCan(ch <-chan canlib.RawCanFrame, pch chan<- canlib.ProcessedCanFrame, ifaceName string, quiet bool) {
+func handleCan(ch <-chan canlib.RawCanFrame, quiet bool, context int, db canalyze.Database) {
     processedCan := canlib.ProcessedCanFrame{}
     for rawCan := range ch {
         canlib.ProcessRawCan(&processedCan, rawCan)
-        pch <- processedCan
+        go db.AddProcessedFrame(processedCan, context)
         if !quiet {
             fmt.Println(canlib.ProcessedCanFrameToString(processedCan, "\t"))
-        }
-    }
-}
-
-// Add the can message to the database
-func handleDB(pch <-chan canlib.ProcessedCanFrame, db canalyze.Database, context int) {
-    for processedCan := range pch {
-        err := db.AddProcessedFrame(processedCan, context)
-        if err != nil {
-            panic(err.Error())
         }
     }
 }

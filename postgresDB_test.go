@@ -159,13 +159,18 @@ func TestPostgresAddProcessedFrame(t *testing.T) {
     if err != nil {
         t.Errorf("function returned an error: " + err.Error())
     }
-    var result int
-    err = testDB.Con.QueryRow("SELECT frame_id FROM canalyze.processed_raw_can WHERE frame_hash = 'test'").Scan(&result)
+    var presult, rresult int
+    err = testDB.Con.QueryRow(`SELECT rcf.id, prc.frame_id FROM canalyze.raw_can_frames rcf INNER JOIN 
+								canalyze.processed_raw_can prc ON ( rcf.id = prc.frame_id  ) 
+									WHERE prc.frame_hash = 'test'`).Scan(&rresult, &presult)
     if err != nil {
         t.Errorf("database returned an error: " + err.Error())
     }
-    if result != 1 {
-        t.Errorf("%d != test", result)
+    if rresult != 1 {
+        t.Errorf("%d != test", rresult)
+    }
+	if presult != 1 {
+        t.Errorf("%d != test", presult)
     }
 }
 
