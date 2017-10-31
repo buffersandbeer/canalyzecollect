@@ -5,7 +5,7 @@
   branch = "master"
   name = "github.com/buffersandbeer/canlib"
   packages = ["."]
-  revision = "3ec6bff594b3d441decc850552cde44afb00ec1c"
+  revision = "73b182121188c0b7086b326575eb1208d2ce8d17"
 
 [[projects]]
   branch = "master"
@@ -17,7 +17,7 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "3e3646d2c706c21b222a5dbcaa6db12b3e0cc765"
+  revision = "95c6576299259db960f6c5b9b69ea52422860fce"
 
 [[projects]]
   branch = "v2"

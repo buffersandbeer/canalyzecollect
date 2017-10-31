@@ -4,7 +4,6 @@ import (
     "github.com/buffersandbeer/canlib"
     canalyze "github.com/buffersandbeer/canalyzecollect"
     "flag"
-    "fmt"
 )
 
 func main() {
@@ -13,7 +12,6 @@ func main() {
     capName := flag.String("capname", "", "The name of the capture")
     details := flag.String("details", "", "Details about the capture")
     target := flag.String("target", "", "Name of the targeted device")
-    quiet := flag.Bool("quiet", false, "Run without printing to stdout")
     flag.Parse()
 
     c := make(chan canlib.RawCanFrame, 100000)
@@ -35,19 +33,8 @@ func main() {
     }
 
     go canlib.CaptureCan(*caniface, c, errChan)
-    go handleCan(c, *quiet, context, database)
-    test := <-errChan
-    panic(test.Error())
-}
 
-// Process the can message
-func handleCan(ch <-chan canlib.RawCanFrame, quiet bool, context int, db canalyze.Database) {
-    processedCan := canlib.ProcessedCanFrame{}
-    for rawCan := range ch {
-        canlib.ProcessRawCan(&processedCan, rawCan)
-        go db.AddProcessedFrame(processedCan, context)
-        if !quiet {
-            fmt.Println(canlib.ProcessedCanFrameToString(processedCan, "\t"))
-        }
+    for frame := range c {
+        go database.AddRawFrame(frame, context)
     }
 }

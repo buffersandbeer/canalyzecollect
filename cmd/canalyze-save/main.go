@@ -9,31 +9,20 @@ import (
 	"encoding/hex"
     "strings"
     "strconv"
-    // DEBUG
-    "runtime/pprof"
-    // ENDDEBUG
+    "runtime"
 )
 
 func main() {
+    runtime.GOMAXPROCS(4)
     configPath := flag.String("config-path", "", "The path to the configuration file")
     candump := flag.Bool("candump", true, "save Socketcan/Candump Log fomatted captures")
     capName := flag.String("capname", "", "Name of the capture")
     details := flag.String("details", "", "Details about the capture")
     target := flag.String("target", "", "Name of the targeted device or network")
     toSave := flag.String("log", "", "File to save to database")
+    workers := *flag.Int("workers", 2, "Number of threads to use to upload frames")
 
-    // DEBUG
-    cpuprofile := flag.String("cpuprofile", "", "write cpu profile")
-    // ENDDEBUG
     flag.Parse()
-
-    // DEBUG
-    if *cpuprofile != "" {
-        f, err := os.Create(*cpuprofile)
-        check(err)
-        pprof.StartCPUProfile(f)
-        defer pprof.StopCPUProfile()
-    }
 
     config := canalyze.Config{}
     err := config.LoadConfig(*configPath)
@@ -51,20 +40,26 @@ func main() {
     defer file.Close()
 
     if *candump {
-        processCandump(file, context, database)
+        processCandump(file, context, database, workers)
     }
 
 }
 
-func processCandump(file *os.File, context int, db canalyze.Database) {
+func processCandump(file *os.File, context int, db canalyze.Database, workers int) {
     scanner := bufio.NewScanner(file)
+    framechan := make(chan canlib.ProcessedCanFrame, 10000)
+    for worker := 0; worker < workers; worker++ {
+        go testConcurrent(framechan, db, context)
+    }
+    rawFrame := canlib.RawCanFrame{}
+    processedFrame := canlib.ProcessedCanFrame{}
     for scanner.Scan() {
-		processedFrame := canlib.ProcessedCanFrame{}
-        nextFrame := ParseCandumpLine(scanner.Text())
+        canlib.ProcessCandump(&rawFrame, scanner.Text())
 		canlib.ProcessRawCan(&processedFrame, nextFrame)
-		db.AddProcessedFrame(processedFrame, context)
+        framechan<- processedFrame
     }
     check(scanner.Err())
+    close(framechan)
 }
 
 func check(err error) {
@@ -99,4 +94,10 @@ func ParseCandumpLine(line string) canlib.RawCanFrame {
     newFrame.Data, _ = hex.DecodeString(packet[1])
     // Return
     return newFrame
+}
+
+func testConcurrent(c <-chan canlib.ProcessedCanFrame, db canalyze.Database, context int) {
+    for frame := range c {
+        db.AddProcessedFrame(frame, context)
+    }
 }
