@@ -9,8 +9,8 @@ import (
 
 // PostgresDB will manage transactions with a PostgreSQL database
 type PostgresDB struct {
-    con *sql.DB
-    connected bool
+    Con *sql.DB
+    Connected bool
 }
 
 // CreatePostgres will connect to the Postgres DB and update the pdb struct to contain that connection
@@ -25,18 +25,13 @@ func CreatePostgres(conf Config) (*PostgresDB, error) {
     if err != nil{
         return &newDB, errors.New("failed to connect to database: " + err.Error())
     }
-    newDB.connected = connected
+    newDB.Connected = connected
     return &newDB, nil
-}
-
-// Close will cleanly close out a DB connection
-func (pdb PostgresDB) Close() error {
-    return nil
 }
 
 // Ping will try to ping the database
 func (pdb PostgresDB) Ping() (bool, error) {
-    err := pdb.con.Ping()
+    err := pdb.Con.Ping()
     if err != nil {
         return false, err
     }
@@ -50,7 +45,7 @@ func (pdb PostgresDB) AddContext(capturer string, captureName string, details st
 
 	var id int
 
-	err := pdb.con.QueryRow(statement, capturer, captureName, details, target).Scan(&id)
+	err := pdb.Con.QueryRow(statement, capturer, captureName, details, target).Scan(&id)
 	if err != nil {
 		return 0, errors.New("database insert returned an error: " + err.Error())
 	}
@@ -64,7 +59,7 @@ func (pdb PostgresDB) AddRawFrame(frame canlib.RawCanFrame, context int) error {
                                                         remote_transmission_request_flag, error_flag, payload, context_id,
                                                         timestamp_nano, capture_interface) VALUES($1, $2, $3, $4, $5, $6,
                                                         $7, $8, $9, $10);`
-    _, err := pdb.con.Exec(statement, frame.OID, frame.ID, frame.Dlc, frame.Eff, frame.Rtr, frame.Err,
+    _, err := pdb.Con.Exec(statement, frame.OID, frame.ID, frame.Dlc, frame.Eff, frame.Rtr, frame.Err,
                         frame.Data, context, frame.Timestamp, frame.CaptureInterface)
     if err != nil {
         return errors.New("db returned an error: " + err.Error())
@@ -80,7 +75,7 @@ func (pdb PostgresDB) AddProcessedFrame(frame canlib.ProcessedCanFrame, context 
                                                         timestamp_nano, capture_interface) VALUES($1, $2, $3, $4, $5, $6,
                                                         $7, $8, $9, $10) RETURNING id;`
     var id int
-    err := pdb.con.QueryRow(statementRaw, frame.Packet.OID, frame.Packet.ID, frame.Packet.Dlc, frame.Packet.Eff,
+    err := pdb.Con.QueryRow(statementRaw, frame.Packet.OID, frame.Packet.ID, frame.Packet.Dlc, frame.Packet.Eff,
                         frame.Packet.Rtr, frame.Packet.Err, frame.Packet.Data, context, frame.Packet.Timestamp,
                         frame.Packet.CaptureInterface).Scan(&id)
     if err != nil {
@@ -88,7 +83,7 @@ func (pdb PostgresDB) AddProcessedFrame(frame canlib.ProcessedCanFrame, context 
     }
     statementProcessed := `INSERT INTO canalyze.processed_raw_can(frame_hash, frame_id, ascii_in_data) 
                             VALUES($1, $2, $3)`
-    _, err = pdb.con.Exec(statementProcessed, frame.PacketHash, id, frame.AlphaNumData)
+    _, err = pdb.Con.Exec(statementProcessed, frame.PacketHash, id, frame.AlphaNumData)
     if err != nil {
         return errors.New("db returned an error adding processed info: " + err.Error())
     }
@@ -99,9 +94,17 @@ func (pdb PostgresDB) AddProcessedFrame(frame canlib.ProcessedCanFrame, context 
 // AddCandumpFrame will add a can frame captured by Socketcan/candump to the database
 func (pdb PostgresDB) AddCandumpFrame(packet string, context int) error {
     statement := `INSERT INTO canalyze.candump_raw (frame, context_id) VALUES ($1, $2)`
-    _, err := pdb.con.Exec(statement, packet, context)
+    _, err := pdb.Con.Exec(statement, packet, context)
     if err != nil {
         return errors.New("db returned an error: " + err.Error())
     }
     return nil
+}
+
+// Close will close the database connection
+func (pdb *PostgresDB) Close() error{
+    var err error
+    err = pdb.Con.Close()
+    pdb.Connected = false
+    return err
 }
