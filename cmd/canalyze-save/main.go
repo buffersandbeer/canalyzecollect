@@ -38,11 +38,10 @@ func main() {
     if *candump {
         processCandump(scanner, context, database, workers)
     }
-
 }
 
 func processCandump(scanner *bufio.Scanner, context int, db canalyze.Database, workers int) {
-    framechan := make(chan canlib.ProcessedCanFrame, 10000)
+    framechan := make(chan canlib.ProcessedCanFrame, 10)
     done := make(chan bool, 1)
     for worker := 0; worker < workers; worker++ {
         go saveConcurrent(framechan, db, context, done)
@@ -61,6 +60,26 @@ func processCandump(scanner *bufio.Scanner, context int, db canalyze.Database, w
     }
 }
 
+func processCanalyze(scanner *bufio.Scanner, context int, db canalyze.Database, workers int) {
+    framechan := make(chan canlib.ProcessedCanFrame, 10)
+    done := make(chan bool, 1)
+    for worker := 0; worker < workers; worker++ {
+        go saveConcurrent(framechan, db, context, done)
+    }
+    rawFrame := canlib.RawCanFrame{}
+    processedFrame := canlib.ProcessedCanFrame{}
+    for scanner.Scan() {
+        canlib.ProcessCanalyzeLog(&rawFrame, scanner.Text())
+		canlib.ProcessRawCan(&processedFrame, rawFrame)
+        framechan<- processedFrame
+    }
+    check(scanner.Err())
+    close(framechan)
+    for worker := 0; worker < workers; worker ++ {
+        <-done
+    }
+}
+
 func check(err error) {
     if err != nil {
         panic(err)
@@ -68,6 +87,7 @@ func check(err error) {
 }
 
 func saveConcurrent(c <-chan canlib.ProcessedCanFrame, db canalyze.Database, context int, done chan<- bool) {
+    tx, err := db.Con.Begin()
     for frame := range c {
         db.AddProcessedFrame(frame, context)
     }

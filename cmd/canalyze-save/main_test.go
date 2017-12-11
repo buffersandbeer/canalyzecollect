@@ -45,7 +45,18 @@ func BenchmarkProcessCandump(b *testing.B) {
     testDB, _ := canalyze.CreatePostgres(testConf)
     defer testDB.Close()
     context, _ := testDB.AddContext("test", "test", "test", "test")
-    var testString string = `(1) test0 1#1`
+    var testString string = `(1) test0 1#1
+(1) test0 1#1
+(1) test0 1#1
+(1) test0 1#1
+(1) test0 1#1
+(1) test0 1#1
+(1) test0 1#1
+(1) test0 1#1
+(1) test0 1#1
+(1) test0 1#1
+(1) test0 1#1
+(1) test0 1#1`
     scanner := bufio.NewScanner(strings.NewReader(testString))
     b.ResetTimer()
     for i := 0; i < b.N; i ++ {
